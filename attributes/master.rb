@@ -8,7 +8,7 @@
 # Author: Seth Vargo <sethvargo@gmail.com>
 #
 # Copyright:: 2010-2016, VMware, Inc.
-# Copyright:: 2012-2016, Chef Software, Inc.
+# Copyright:: 2012-2017, Chef Software, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ default['jenkins']['master'].tap do |master|
   #   node.normal['jenkins']['master']['install_method'] = 'war'
   #
   master['install_method'] = case node['platform_family']
-                             when 'debian', 'rhel' then 'package'
+                             when 'debian', 'rhel', 'amazon' then 'package'
                              else 'war'
                              end
 
@@ -45,7 +45,13 @@ default['jenkins']['master'].tap do |master|
   master['version'] = nil
 
   #
-  # The mirror to donload the Jenkins war file. This attribute is only used
+  # The "channel" to use, default is stable
+  # Alternatively: "current" for install method package and "latest" for install method war
+  #
+  master['channel'] = 'stable'
+
+  #
+  # The mirror to download the Jenkins war file. This attribute is only used
   # in the "war" installation method.
   #
   #   node.normal['jenkins']['master']['mirror'] = 'http://cache.example.com'
@@ -55,7 +61,7 @@ default['jenkins']['master'].tap do |master|
   # more interested in the +source+ attribute, which accepts the full path
   # to the war file for downloading.
   #
-  master['mirror'] = 'http://mirrors.jenkins-ci.org'
+  master['mirror'] = 'https://updates.jenkins.io'
 
   #
   # The full URL to the Jenkins WAR file on the remote mirror. This attribute is
@@ -70,7 +76,9 @@ default['jenkins']['master'].tap do |master|
   # Warning: Setting this attribute will negate/ignore any values for +mirror+
   # and +version+.
   #
-  master['source'] = "#{node['jenkins']['master']['mirror']}/war/#{node['jenkins']['master']['version'] || 'latest'}/jenkins.war"
+  master['source'] = "#{node['jenkins']['master']['mirror']}/"\
+    "#{node['jenkins']['master']['version'] || node['jenkins']['master']['channel']}/"\
+    'latest/jenkins.war'
 
   #
   # The checksum of the war file. This is use to verify that the remote war file
@@ -88,7 +96,7 @@ default['jenkins']['master'].tap do |master|
   #
   #   node.normal['jenkins']['master']['jvm_options'] = '-Xmx256m'
   #
-  master['jvm_options'] = nil
+  master['jvm_options'] = '-Djenkins.install.runSetupWizard=false'
 
   #
   # The list of Jenkins arguments to pass to the initialize script. This varies
@@ -128,7 +136,7 @@ default['jenkins']['master'].tap do |master|
   #
   # Jenkins user/group should be created as `system` accounts for `war` install.
   # The default of `true` will ensure that **new** jenkins user accounts are
-  # created in the system ID range, exisitng users will not be modified.
+  # created in the system ID range, existing users will not be modified.
   #
   #   node.normal['jenkins']['master']['use_system_accounts'] = false
   #
@@ -214,20 +222,19 @@ default['jenkins']['master'].tap do |master|
   master['ulimits'] = nil
 
   #
-  # Repository URL. Default is latest
+  # Repository URL and key. Default is stable.
   #
-  master['repository'] = case node['platform_family']
-                         when 'debian' then 'http://pkg.jenkins-ci.org/debian'
-                         when 'rhel' then 'https://pkg.jenkins.io/redhat'
-                         end
-
-  #
-  # Repository key. Default is latest
-  #
-  master['repository_key'] = case node['platform_family']
-                             when 'debian' then 'http://pkg.jenkins-ci.org/debian/jenkins-ci.org.key'
-                             when 'rhel' then 'https://pkg.jenkins.io/redhat/jenkins.io.key'
-                             end
+  master['repository'], master['repository_key'] =
+    case [node['platform_family'], node['jenkins']['master']['channel']]
+    when %w(debian stable)
+      ['https://pkg.jenkins.io/debian-stable', 'https://pkg.jenkins.io/debian-stable/jenkins.io.key']
+    when %w(rhel stable), %w(amazon stable)
+      ['https://pkg.jenkins.io/redhat-stable', 'https://pkg.jenkins.io/redhat-stable/jenkins.io.key']
+    when %w(debian current)
+      ['https://pkg.jenkins.io/debian', 'https://pkg.jenkins.io/debian/jenkins.io.key']
+    when %w(rhel current), %w(amazon current)
+      ['https://pkg.jenkins.io/redhat', 'https://pkg.jenkins.io/redhat/jenkins.io.key']
+    end
 
   #
   # Keyserver to use. Disabled by default

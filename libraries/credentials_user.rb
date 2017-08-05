@@ -19,6 +19,10 @@
 # limitations under the License.
 #
 
+# This is required to appease Travis-CI
+# https://travis-ci.org/chef-cookbooks/jenkins/builds/197337230
+require_relative 'credentials'
+
 class Chef
   class Resource::JenkinsUserCredentials < Resource::JenkinsCredentials
     attribute :description,
@@ -33,7 +37,7 @@ class Chef
     include Jenkins::Helper
 
     def load_current_resource
-      @current_resource ||= Resource::JenkinsCredentialsUser.new(new_resource.name)
+      @current_resource ||= Resource::JenkinsUserCredentials.new(new_resource.name)
 
       super
 

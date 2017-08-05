@@ -4,7 +4,7 @@
 #
 # Author:: Seth Vargo <sethvargo@gmail.com>
 #
-# Copyright:: 2013-2016, Chef Software, Inc.
+# Copyright:: 2013-2017, Chef Software, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -64,6 +64,7 @@ end
 
 class Chef
   class Provider::JenkinsUser < Provider::LWRPBase
+    provides :jenkins_user
     use_inline_resources
     include Jenkins::Helper
 
@@ -91,8 +92,8 @@ class Chef
 
     action :create do
       if current_resource.exists? &&
-         current_resource.full_name == new_resource.full_name &&
-         current_resource.email == new_resource.email &&
+         (new_resource.full_name.nil? || current_resource.full_name == new_resource.full_name) &&
+         (new_resource.email.nil? || current_resource.email == new_resource.email) &&
          current_resource.public_keys == new_resource.public_keys
         Chef::Log.info("#{new_resource} exists - skipping")
       else
@@ -182,8 +183,3 @@ class Chef
     end
   end
 end
-
-Chef::Platform.set(
-  resource: :jenkins_user,
-  provider: Chef::Provider::JenkinsUser
-)

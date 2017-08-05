@@ -4,7 +4,7 @@
 #
 # Author:: Seth Vargo <sethvargo@gmail.com>
 #
-# Copyright:: 2013-2016, Chef Software, Inc.
+# Copyright:: 2013-2017, Chef Software, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -71,6 +71,8 @@ EOH
         h[:username] = username unless username.nil?
         h[:password] = password unless password.nil?
         h[:jvm_options] = jvm_options unless jvm_options.nil?
+        h[:protocol] = protocol unless protocol.nil?
+        h[:cli_user] = cli_user unless cli_user.nil?
       end
 
       Jenkins::Executor.new(options)
@@ -360,6 +362,26 @@ EOH
     end
 
     #
+    # protocol to pass to cli
+    # ssh/http/remoting
+    #
+    # @return [String]
+    #
+    def protocol
+      node['jenkins']['executor']['protocol']
+    end
+
+    #
+    # CLI user to pass to cli
+    # ssh protocol or http protocol needs it
+    #
+    # @return [String]
+    #
+    def cli_user
+      node['jenkins']['executor']['cli_user']
+    end
+
+    #
     # The path to the +jenkins-cli.jar+ on disk (which may or may not exist).
     #
     # @return [String]
@@ -448,7 +470,7 @@ EOH
     #
     def ensure_update_center_present!
       node.run_state[:jenkins_update_center_present] ||= begin # ~FC001
-        source = uri_join(node['jenkins']['master']['mirror'], 'updates', 'update-center.json')
+        source = uri_join(node['jenkins']['master']['mirror'], node['jenkins']['master']['channel'], 'update-center.json')
         remote_file = Chef::Resource::RemoteFile.new(update_center_json, run_context)
         remote_file.source(source)
         remote_file.backup(false)
